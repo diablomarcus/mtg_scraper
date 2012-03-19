@@ -13,11 +13,12 @@ sub grab_page {
 # This is the URL we're going to scrape for data
 my $url1 = 'http://gatherer.wizards.com/Pages/Search/Default.aspx?page=';
 my $url2 = '&sort=cn+&output=checklist&action=advanced&set=+%5b%22Dark+Ascension%22%5d';
+my $x=0; #For now, we're only using the first page
 
-for(my $x=0; $x<=1; $x++){
-   grab_page("$url1$x$url2");
-}
-__END__
+#Removing for-loop for simplicity during testing of data-gathering
+#for(my $x=0; $x<=1; $x++){
+grab_page("$url1$x$url2");
+#}
 
 #instantiate the scraper
 my $cardsData=scraper {
