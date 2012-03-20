@@ -4,9 +4,18 @@ use strict;
 use warnings;
 use URI;
 use Web::Scraper;
+use IO::File;
+use XML::Writer;
+
+
+#Define our output container
+my $output = IO::File->new(">output.xml");
+#Define our XML writer
+my $writer = XML::Writer->new(OUTPUT=>$output, NEW_LINES=>1,
+   DATA_MODE=>1, DATA_INDENT=>1);
 
 sub grab_page {
-   my $address = $_[0];
+   return $_[0];
 };
 
 # This is the URL we're going to scrape for data
@@ -19,7 +28,7 @@ my $address=grab_page("$url1$x$url2");
 #instantiate the scraper
 my $cardsData=scraper {
    #Loop through each row of the checklist page
-   process "tr.cardItem", 'cardRow[]' => scraper {
+   process "tr.cardItem", 'cardRows[]' => scraper {
       #These should be self-explanatary
       process "td.number", number => 'TEXT';
       process "td.name > a.nameLink", name => 'TEXT';
@@ -32,8 +41,16 @@ my $cardsData=scraper {
 #scrape the site
 my $res = $cardsData->scrape(URI->new($address));
 
+$writer->startTag("DKA");
 #loop through the hits
-for my $i (@{$res->{cardRow}}) {
-   #Print the results
-   print "$i->{number} $i->{name} $i->{color} $i->{rarity} by $i->{artist}\n";
+for my $card (@{$res->{cardRows}}) {
+	$writer->startTag($card->{name}); #Open card xml
+	$writer->dataElement('card_number', "$card->{number}");
+	$writer->dataElement('card_rarity', "$card->{rarity}");
+	$writer->dataElement('card_color', "$card->{color}");
+	$writer->dataElement('card_artist', "$card->{artist}");
+	$writer->endTag($card->{name});
 }
+$writer->endTag("DKA");
+
+$writer->end(); #close our writer class
