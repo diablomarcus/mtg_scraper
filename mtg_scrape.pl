@@ -26,12 +26,13 @@ my $x=0; #For now, we're only using the first page
 my $address=grab_page("$url1$x$url2");
 
 #instantiate the scraper
-my $cardsData=scraper {
+my $compactScraper=scraper {
    #Loop through each row of the checklist page
    process "tr.cardItem", 'cardRows[]' => scraper {
       #These should be self-explanatary
       process "td.number", number => 'TEXT';
       process "td.name > a.nameLink", name => 'TEXT';
+      process "td.name > a.nameLink", link => '@href';
       process "td.artist", artist => 'TEXT';
       process "td.color", color => 'TEXT';
       process "td.rarity", rarity => 'TEXT';
@@ -39,12 +40,13 @@ my $cardsData=scraper {
 };
 
 #scrape the site
-my $res = $cardsData->scrape(URI->new($address));
+my $res = $compactScraper->scrape(URI->new($address));
 
 $writer->startTag("DKA");
 #loop through the hits
 for my $card (@{$res->{cardRows}}) {
 	$writer->startTag($card->{name}); #Open card xml
+	$writer->dataElement('card_link', "$card->{link}");
 	$writer->dataElement('card_number', "$card->{number}");
 	$writer->dataElement('card_rarity', "$card->{rarity}");
 	$writer->dataElement('card_color', "$card->{color}");
@@ -52,5 +54,21 @@ for my $card (@{$res->{cardRows}}) {
 	$writer->endTag($card->{name});
 }
 $writer->endTag("DKA");
-
 $writer->end(); #close our writer class
+
+#instantiate the card_detail scraper
+my $cardDetail=scraper {
+   #These should be self-explanatary
+   process "td.number", number => 'TEXT';
+   process "td.name > a.nameLink", name => 'TEXT';
+   process "td.name > a.nameLink", link => '@href';
+   process "td.artist", artist => 'TEXT';
+   process "td.color", color => 'TEXT';
+   process "td.rarity", rarity => 'TEXT';
+};
+
+
+#TODO: loop through the rows we have to ping each link
+for my $card (@{$res->{cardRows}}) {
+
+}
