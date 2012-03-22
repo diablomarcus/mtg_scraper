@@ -30,13 +30,41 @@ sub compact_scraper {
          process "td.rarity", rarity => 'TEXT';
       };
    };
-   return $compactScraper
+   return $compactScraper;
 };
+
+# This subroutine contains a scraper for all card_details
+# of a card gleaned from the card's full listing on Gatherer
+sub detailed_scraper {
+   #Instantiate the scraper object
+   my $scraper=scraper {
+      #Loop through each row of the checklist page
+      process "div.row", 'infoRows[]' => scraper {
+         process "div.label", label => 'TEXT';
+         process "div.value", value => 'TEXT';
+      };
+   };
+   return $scraper;
+};
+
 
 #TODO: Add parsing of page to scan
 sub grab_page {
    return $_[0];
 };
+
+#TODO: Parse the data returned here
+sub hellrider_test {
+   my $hellrider_address="http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=226874";
+   my $hellrider_results=detailed_scraper()->scrape(URI->new($hellrider_address));
+
+   for my $detail (@{$hellrider_results->{infoRows}}) {
+      print("label: $detail->{label}\n");
+#TODO: Learn how to deal with weird UTF8 issues
+      print("value: $detail->{value}\n");
+   }
+}
+
 
 #TODO: Build multi-page scrapes
 # This is the URL we're going to scrape for data
@@ -45,6 +73,9 @@ my $url2 = '&sort=cn+&output=checklist&action=advanced&set=+%5b%22Dark+Ascension
 my $x=0; #For now, we're only using the first page
 
 my $address=grab_page("$url1$x$url2");
+
+
+hellrider_test(); #Test of detailed scrape
 
 #scrape the site
 my $results=compact_scraper()->scrape(URI->new($address));
