@@ -33,18 +33,12 @@ sub compact_scraper {
    return $compactScraper
 };
 
-#TODO: Add parsing of page to scan
-sub grab_page {
-   return $_[0];
-};
-
-#TODO: Build multi-page scrapes
 # This is the URL we're going to scrape for data
 my $url1 = 'http://gatherer.wizards.com/Pages/Search/Default.aspx?page=';
 my $url2 = '&sort=cn+&output=checklist&action=advanced&set=+%5b%22Dark+Ascension%22%5d';
 my $x=0; #For now, we're only using the first page
 
-my $address=grab_page("$url1$x$url2");
+my $address="$url1$x$url2";
 
 #scrape the site
 my $results=compact_scraper()->scrape(URI->new($address));
@@ -79,9 +73,3 @@ my $cardDetail=scraper {
    process "td.color", color => 'TEXT';
    process "td.rarity", rarity => 'TEXT';
 };
-
-
-#TODO: loop through the rows we have to ping each link
-#for my $card (@{$res->{cardRows}}) {
-
-#}
