@@ -14,7 +14,10 @@ my $output = IO::File->new(">/tmp/output.xml");
 my $writer = XML::Writer->new(OUTPUT=>$output, NEW_LINES=>1,
    DATA_MODE=>1, DATA_INDENT=>1);
 
+# This subroutine contains a scraper for the basic details
+# of a card gleaned from the compact listing on Gatherer
 sub compact_scraper {
+   #Instantiate the scraper object
    my $compactScraper=scraper {
       #Loop through each row of the checklist page
       process "tr.cardItem", 'cardRows[]' => scraper {
@@ -30,6 +33,7 @@ sub compact_scraper {
    return $compactScraper
 };
 
+#TODO: Add parsing of page to scan
 sub grab_page {
    return $_[0];
 };
@@ -45,6 +49,7 @@ my $address=grab_page("$url1$x$url2");
 #scrape the site
 my $results=compact_scraper()->scrape(URI->new($address));
 
+#Add a tag to the start of our XML file so we don't inadvertently close it
 $writer->startTag("cards");
 #loop through the hits
 for my $card (@{$results->{cardRows}}) {
@@ -56,9 +61,12 @@ for my $card (@{$results->{cardRows}}) {
    $writer->dataElement('card_rarity', "$card->{rarity}");
    $writer->dataElement('card_color', "$card->{color}");
    $writer->dataElement('card_artist', "$card->{artist}");
-   $writer->endTag($card->{name});
+
+   $writer->endTag($card->{name}); #Close card xml
 }
+
 $writer->endTag("cards");
+
 $writer->end(); #close our writer class
 
 #instantiate the card_detail scraper
