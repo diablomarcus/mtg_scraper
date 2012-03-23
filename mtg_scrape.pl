@@ -14,25 +14,25 @@ my $output = IO::File->new(">/tmp/output.xml");
 my $writer = XML::Writer->new(OUTPUT=>$output, NEW_LINES=>1,
    DATA_MODE=>1, DATA_INDENT=>1);
 
+#Define our hash of valid fields for detailed read
+my %valid_fields=( #These are the fields we'll read
+   ' Card Name:' => 'cardName',
+   ' Converted Mana Cost:', => 'cmc',
+   ' Rarity:' => 'rarity', 
+   ' Card #:' => 'cardNumber', 
+   ' Artist:' => 'artist');
+
 
 # This subroutine takes a string, looks it up in our enum list of detailed
 # information and returns 1 if we want to collect it, 0 if not
 sub isFieldScrapable{
+
+   #Define the field we'll be checking
    my $testValue=$_[0];
 
-   my @valid_fields=( #These are the fields we'll read
-      'Card Name:', 
-      'Converted Mana Cost:', 
-      'Rarity:', 
-      'Card #:', 
-      'Artist:');
-
-   #Loop through the valid fields and check vs our testVal
-   foreach (@valid_fields) {
-      
-      if ($testValue =~ m/$_$/) {
-         return 1; #Success!
-      }
+   #If testValue is a valid_field
+   if (grep {m/^$testValue$/}  keys %valid_fields) {
+      return 1; #Success!
    }
    return 0; #Couldn't find it... Boo.
 }
@@ -82,12 +82,15 @@ sub hellrider_test {
    my $hellrider_results=detailed_scraper()->scrape(URI->new($hellrider_address));
 
    for my $detail (@{$hellrider_results->{infoRows}}) {
-      print("label: $detail->{label}\n");
 #TODO: Learn how to deal with weird UTF8 issues
       if (isFieldScrapable($detail->{label})) {
-         print("value: $detail->{value}\n");
-      } else {
-         print("Not retrieving this value.\n");
+
+         #Grab hash value for label
+         my $varName= $valid_fields{$detail->{label}};
+
+#TODO: Store the detailed card info in a hash temporarily
+         #Tell user the info we just gleaned
+         print("$varName: $detail->{value}\n");
       }
    }
 }
