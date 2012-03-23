@@ -14,6 +14,13 @@ my $output = IO::File->new(">/tmp/output.xml");
 my $writer = XML::Writer->new(OUTPUT=>$output, NEW_LINES=>1,
    DATA_MODE=>1, DATA_INDENT=>1);
 
+
+# This subroutine takes a string, looks it up in our enum list of detailed
+# information and returns 1 if we want to collect it, 0 if not
+#TODO: Make this actually do something
+sub enum_detail_key {
+}
+
 # This subroutine contains a scraper for the basic details
 # of a card gleaned from the compact listing on Gatherer
 sub compact_scraper {
