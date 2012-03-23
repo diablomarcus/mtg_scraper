@@ -17,8 +17,24 @@ my $writer = XML::Writer->new(OUTPUT=>$output, NEW_LINES=>1,
 
 # This subroutine takes a string, looks it up in our enum list of detailed
 # information and returns 1 if we want to collect it, 0 if not
-#TODO: Make this actually do something
-sub enum_detail_key {
+sub isFieldScrapable{
+   my $testValue=$_[0];
+
+   my @valid_fields=( #These are the fields we'll read
+      'Card Name:', 
+      'Converted Mana Cost:', 
+      'Rarity:', 
+      'Card #:', 
+      'Artist:');
+
+   #Loop through the valid fields and check vs our testVal
+   foreach (@valid_fields) {
+      
+      if ($testValue =~ m/$_$/) {
+         return 1; #Success!
+      }
+   }
+   return 0; #Couldn't find it... Boo.
 }
 
 # This subroutine contains a scraper for the basic details
@@ -27,7 +43,7 @@ sub compact_scraper {
    #Instantiate the scraper object
    my $compactScraper=scraper {
       #Loop through each row of the checklist page
-      process "tr.cardItem", 'cardRows[]' => scraper {
+      process 'tr.cardItem', 'cardRows[]' => scraper {
          #These should be self-explanatary
          process "td.number", number => 'TEXT';
          process "td.name > a.nameLink", name => 'TEXT';
@@ -68,7 +84,11 @@ sub hellrider_test {
    for my $detail (@{$hellrider_results->{infoRows}}) {
       print("label: $detail->{label}\n");
 #TODO: Learn how to deal with weird UTF8 issues
-      print("value: $detail->{value}\n");
+      if (isFieldScrapable($detail->{label})) {
+         print("value: $detail->{value}\n");
+      } else {
+         print("Not retrieving this value.\n");
+      }
    }
 }
 
