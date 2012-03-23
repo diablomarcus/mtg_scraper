@@ -22,6 +22,7 @@ my %valid_fields=( #These are the fields we'll read
    ' Card #:' => 'cardNumber', 
    ' Rarity:' => 'rarity',
    ' Expansion:' => 'expansion',
+   ' Flavor Text:' => 'flavorText',
    ' P/T:' => 'powerToughness',
    ' Artist:' => 'artist');
 
@@ -92,8 +93,11 @@ sub getCardDetail {
          my $varName= $valid_fields{$detail->{label}};
 
 #TODO: Store the detailed card info in a hash temporarily
+         my $value = $detail->{value};
+         $value=~ s/[^[:ascii:]]+//g;  # get rid of non-ASCII characters
+
          #Tell user the info we just gleaned
-         print("$varName: $detail->{value}\n");
+         print(decode_utf8("$varName: $value\n"));
       }
    }
 
