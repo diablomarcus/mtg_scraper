@@ -6,6 +6,7 @@ use URI;
 use Web::Scraper;
 use IO::File;
 use XML::Writer;
+use Encode;
 
 
 #Define our output container
@@ -18,8 +19,10 @@ my $writer = XML::Writer->new(OUTPUT=>$output, NEW_LINES=>1,
 my %valid_fields=( #These are the fields we'll read
    ' Card Name:' => 'cardName',
    ' Converted Mana Cost:', => 'cmc',
-   ' Rarity:' => 'rarity', 
    ' Card #:' => 'cardNumber', 
+   ' Rarity:' => 'rarity',
+   ' Expansion:' => 'expansion',
+   ' P/T:' => 'powerToughness',
    ' Artist:' => 'artist');
 
 
@@ -70,18 +73,18 @@ sub detailed_scraper {
    return $scraper;
 };
 
-
 #TODO: Add parsing of page to scan
 sub grab_page {
    return $_[0];
 };
 
 #TODO: Parse the data returned here
-sub hellrider_test {
-   my $hellrider_address="http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=226874";
-   my $hellrider_results=detailed_scraper()->scrape(URI->new($hellrider_address));
+sub getCardDetail {
+   my $address=$_[0];#Address of individual card
+   my %cardDetail; #Return object w/ info about card
+   my $results=detailed_scraper()->scrape(URI->new($address));
 
-   for my $detail (@{$hellrider_results->{infoRows}}) {
+   for my $detail (@{$results->{infoRows}}) {
 #TODO: Learn how to deal with weird UTF8 issues
       if (isFieldScrapable($detail->{label})) {
 
@@ -93,6 +96,8 @@ sub hellrider_test {
          print("$varName: $detail->{value}\n");
       }
    }
+
+   return 0;
 }
 
 
@@ -105,7 +110,8 @@ my $x=0; #For now, we're only using the first page
 my $address=grab_page("$url1$x$url2");
 
 
-hellrider_test(); #Test of detailed scrape
+getCardDetail('http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=226874'); #Test of detailed scrape
+
 
 #scrape the site
 my $results=compact_scraper()->scrape(URI->new($address));
@@ -129,18 +135,6 @@ for my $card (@{$results->{cardRows}}) {
 $writer->endTag("cards");
 
 $writer->end(); #close our writer class
-
-#instantiate the card_detail scraper
-my $cardDetail=scraper {
-   #These should be self-explanatary
-   process "td.number", number => 'TEXT';
-   process "td.name > a.nameLink", name => 'TEXT';
-   process "td.name > a.nameLink", link => '@href';
-   process "td.artist", artist => 'TEXT';
-   process "td.color", color => 'TEXT';
-   process "td.rarity", rarity => 'TEXT';
-};
-
 
 #TODO: loop through the rows we have to ping each link
 #for my $card (@{$res->{cardRows}}) {
