@@ -10,20 +10,23 @@ use Encode;
 
 
 #Define our output container
-my $output = IO::File->new(">/tmp/output.xml");
+my $OUTPUT = IO::File->new(">/tmp/mtg_scraper_output.xml");
 #Define our XML writer
-my $writer = XML::Writer->new(OUTPUT=>$output, NEW_LINES=>1,
+my $writer = XML::Writer->new(OUTPUT=>$OUTPUT, NEW_LINES=>1,
    DATA_MODE=>1, DATA_INDENT=>1);
 
 #Define our hash of valid fields for detailed read
 my %valid_fields=( #These are the fields we'll read
    ' Card Name:' => 'cardName',
-   ' Converted Mana Cost:', => 'cmc',
+   ' Converted Mana Cost:', => 'convertedManaCost',
    ' Card #:' => 'cardNumber', 
    ' Rarity:' => 'rarity',
    ' Expansion:' => 'expansion',
+   ' Types:' => 'types',
+   ' Card Text:' => 'cardText',
    ' Flavor Text:' => 'flavorText',
    ' P/T:' => 'powerToughness',
+   ' Loyalty:' => 'loyalty',
    ' Artist:' => 'artist');
 
 
@@ -49,12 +52,9 @@ sub compact_scraper {
       #Loop through each row of the checklist page
       process 'tr.cardItem', 'cardRows[]' => scraper {
          #These should be self-explanatary
-         process "td.number", number => 'TEXT';
          process "td.name > a.nameLink", name => 'TEXT';
          process "td.name > a.nameLink", link => '@href';
-         process "td.artist", artist => 'TEXT';
          process "td.color", color => 'TEXT';
-         process "td.rarity", rarity => 'TEXT';
       };
    };
    return $compactScraper;
@@ -74,6 +74,7 @@ sub detailed_scraper {
    return $scraper;
 };
 
+#TODO: Add parsing of page to scan
 sub grab_page {
    return $_[0];
 };
@@ -89,25 +90,24 @@ sub getCardDetail {
          #Grab hash value for label
          my $varName= $valid_fields{$detail->{label}};
 
-         my $value = $detail->{value};
-         #Tell user the info we just gleaned
-         print(encode('utf8',"$varName: $value\n")); #Had to ensure utf8
+         #Store the info we just gleaned
+         $cardDetail{$varName}=encode('utf8', $detail->{value}); #Had to ensure utf8
       }
    }
-   return 0;
+   return %cardDetail;
 }
 
 
+#TODO: Build multi-page scrapes
 # This is the URL we're going to scrape for data
 my $url1 = 'http://gatherer.wizards.com/Pages/Search/Default.aspx?page=';
 my $url2 = '&sort=cn+&output=checklist&action=advanced&set=+%5b%22Dark+Ascension%22%5d';
+
+#This one is just for short output testing
+$url2 = '&sort=cn+&output=checklist&action=advanced&set=+%5b%22Dark+Ascension%22%5d&type=+%5b%22Land%22%5d';
 my $x=0; #For now, we're only using the first page
 
-my $address="$url1$x$url2";
-
-
-getCardDetail('http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=226874'); #Test of detailed scrape
-
+my $address=grab_page("$url1$x$url2");
 
 #scrape the site
 my $results=compact_scraper()->scrape(URI->new($address));
@@ -116,16 +116,26 @@ my $results=compact_scraper()->scrape(URI->new($address));
 $writer->startTag("cards");
 #loop through the hits
 for my $card (@{$results->{cardRows}}) {
+
+   sleep 3; #Try not to look like we're DoSing WotC
+
+   #Grab detailed card info
+   my %cardInfo=getCardDetail($card->{link});
+   
    $writer->startTag($card->{name}); #Open card xml
 
-   #Store elements
+   #Store basic elements
    $writer->dataElement('card_link', "$card->{link}");
-   $writer->dataElement('card_number', "$card->{number}");
-   $writer->dataElement('card_rarity', "$card->{rarity}");
    $writer->dataElement('card_color', "$card->{color}");
-   $writer->dataElement('card_artist', "$card->{artist}");
+
+   #Loop through each detailed element
+   foreach my $key (sort(keys %cardInfo)) {
+      $writer->dataElement($key, $cardInfo{$key}); #Write the element
+   }
 
    $writer->endTag($card->{name}); #Close card xml
+
+   print "Finished $card->{name}\n"; #Give status update
 }
 
 $writer->endTag("cards");
