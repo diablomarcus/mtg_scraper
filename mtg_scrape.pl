@@ -86,7 +86,6 @@ sub getCardDetail {
    my $results=detailed_scraper()->scrape(URI->new($address));
 
    for my $detail (@{$results->{infoRows}}) {
-#TODO: Learn how to deal with weird UTF8 issues
       if (isFieldScrapable($detail->{label})) {
 
          #Grab hash value for label
@@ -94,13 +93,10 @@ sub getCardDetail {
 
 #TODO: Store the detailed card info in a hash temporarily
          my $value = $detail->{value};
-         $value=~ s/[^[:ascii:]]+//g;  # get rid of non-ASCII characters
-
          #Tell user the info we just gleaned
-         print(decode_utf8("$varName: $value\n"));
+         print(encode('utf8',"$varName: $value\n")); #Had to ensure utf8
       }
    }
-
    return 0;
 }
 
@@ -142,5 +138,4 @@ $writer->end(); #close our writer class
 
 #TODO: loop through the rows we have to ping each link
 #for my $card (@{$res->{cardRows}}) {
-
 #}
