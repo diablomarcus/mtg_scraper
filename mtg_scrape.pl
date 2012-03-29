@@ -6,6 +6,7 @@ use URI;
 use Web::Scraper;
 use IO::File;
 use XML::Writer;
+use Encode;
 
 
 #Define our output container
@@ -14,13 +15,39 @@ my $output = IO::File->new(">/tmp/output.xml");
 my $writer = XML::Writer->new(OUTPUT=>$output, NEW_LINES=>1,
    DATA_MODE=>1, DATA_INDENT=>1);
 
+#Define our hash of valid fields for detailed read
+my %valid_fields=( #These are the fields we'll read
+   ' Card Name:' => 'cardName',
+   ' Converted Mana Cost:', => 'cmc',
+   ' Card #:' => 'cardNumber', 
+   ' Rarity:' => 'rarity',
+   ' Expansion:' => 'expansion',
+   ' Flavor Text:' => 'flavorText',
+   ' P/T:' => 'powerToughness',
+   ' Artist:' => 'artist');
+
+
+# This subroutine takes a string, looks it up in our enum list of detailed
+# information and returns 1 if we want to collect it, 0 if not
+sub isFieldScrapable{
+
+   #Define the field we'll be checking
+   my $testValue=$_[0];
+
+   #If testValue is a valid_field
+   if (grep {m/^$testValue$/}  keys %valid_fields) {
+      return 1; #Success!
+   }
+   return 0; #Couldn't find it... Boo.
+}
+
 # This subroutine contains a scraper for the basic details
 # of a card gleaned from the compact listing on Gatherer
 sub compact_scraper {
    #Instantiate the scraper object
    my $compactScraper=scraper {
       #Loop through each row of the checklist page
-      process "tr.cardItem", 'cardRows[]' => scraper {
+      process 'tr.cardItem', 'cardRows[]' => scraper {
          #These should be self-explanatary
          process "td.number", number => 'TEXT';
          process "td.name > a.nameLink", name => 'TEXT';
@@ -30,8 +57,46 @@ sub compact_scraper {
          process "td.rarity", rarity => 'TEXT';
       };
    };
-   return $compactScraper
+   return $compactScraper;
 };
+
+# This subroutine contains a scraper for all card_details
+# of a card gleaned from the card's full listing on Gatherer
+sub detailed_scraper {
+   #Instantiate the scraper object
+   my $scraper=scraper {
+      #Loop through each row of the checklist page
+      process "div.row", 'infoRows[]' => scraper {
+         process "div.label", label => 'TEXT';
+         process "div.value", value => 'TEXT';
+      };
+   };
+   return $scraper;
+};
+
+sub grab_page {
+   return $_[0];
+};
+
+sub getCardDetail {
+   my $address=$_[0];#Address of individual card
+   my %cardDetail; #Return object w/ info about card
+   my $results=detailed_scraper()->scrape(URI->new($address));
+
+   for my $detail (@{$results->{infoRows}}) {
+      if (isFieldScrapable($detail->{label})) {
+
+         #Grab hash value for label
+         my $varName= $valid_fields{$detail->{label}};
+
+         my $value = $detail->{value};
+         #Tell user the info we just gleaned
+         print(encode('utf8',"$varName: $value\n")); #Had to ensure utf8
+      }
+   }
+   return 0;
+}
+
 
 # This is the URL we're going to scrape for data
 my $url1 = 'http://gatherer.wizards.com/Pages/Search/Default.aspx?page=';
@@ -39,6 +104,10 @@ my $url2 = '&sort=cn+&output=checklist&action=advanced&set=+%5b%22Dark+Ascension
 my $x=0; #For now, we're only using the first page
 
 my $address="$url1$x$url2";
+
+
+getCardDetail('http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=226874'); #Test of detailed scrape
+
 
 #scrape the site
 my $results=compact_scraper()->scrape(URI->new($address));
@@ -62,14 +131,3 @@ for my $card (@{$results->{cardRows}}) {
 $writer->endTag("cards");
 
 $writer->end(); #close our writer class
-
-#instantiate the card_detail scraper
-my $cardDetail=scraper {
-   #These should be self-explanatary
-   process "td.number", number => 'TEXT';
-   process "td.name > a.nameLink", name => 'TEXT';
-   process "td.name > a.nameLink", link => '@href';
-   process "td.artist", artist => 'TEXT';
-   process "td.color", color => 'TEXT';
-   process "td.rarity", rarity => 'TEXT';
-};
