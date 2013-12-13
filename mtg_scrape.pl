@@ -95,7 +95,8 @@ sub getCardDetail {
 
 
 # This is the URL we're going to scrape for data
-my $address='http://gatherer.wizards.com/Pages/Search/Default.aspx?output=checklist&action=advanced&set=+[%22Dark+Ascension%22]&rarity=|[M]';
+my $address='http://gatherer.wizards.com/Pages/Search/Default.aspx?output=checklist&action=advanced&rarity=|[M]|[R]|[U]|[C]|[L]|[S]|[P]';
+
 
 #scrape the site
 my $results=compact_scraper()->scrape(URI->new($address));
