@@ -96,7 +96,9 @@ sub getCardDetail {
 
 
 # This is the URL we're going to scrape for data
-my $address='http://gatherer.wizards.com/Pages/Search/Default.aspx?output=checklist&action=advanced&rarity=|[M]|[R]|[U]|[C]|[L]|[S]|[P]';
+#my $address='http://gatherer.wizards.com/Pages/Search/Default.aspx?output=checklist&action=advanced&rarity=|[M]|[R]|[U]|[C]|[L]|[S]|[P]';
+#More sane default
+my $address='http://gatherer.wizards.com/Pages/Search/Default.aspx?output=checklist&action=advanced&rarity=|[M]';
 
 
 #scrape the site
