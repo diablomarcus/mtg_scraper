@@ -30,6 +30,7 @@ my %valid_fields=( #These are the fields we'll read
    ' Loyalty:' => 'loyalty',
    ' Artist:' => 'artist');
 
+my %scraped_cards=();
 
 # This subroutine takes a string, looks it up in our enum list of detailed
 # information and returns 1 if we want to collect it, 0 if not
@@ -106,25 +107,32 @@ $writer->startTag("cards");
 #loop through the hits
 for my $card (@{$results->{cardRows}}) {
 
-   sleep 1; #Try not to look like we're DoSing WotC
+   if (exists $scraped_cards{$card->{link}}){
+      print "Skipping $card->{name} since we've already seen it\n";
+   } else {
+      sleep 1; #Try not to look like we're DoSing WotC
 
-   #Grab detailed card info
-   my %cardInfo=getCardDetail($card->{link});
-   
-   $writer->startTag($card->{name}); #Open card xml
+      #Grab detailed card info
+      my %cardInfo=getCardDetail($card->{link});
+      
+      $writer->startTag($card->{name}); #Open card xml
 
-   #Store basic elements
-   $writer->dataElement('card_link', "$card->{link}");
-   $writer->dataElement('card_color', "$card->{color}");
+      #Store basic elements
+      $writer->dataElement('card_link', "$card->{link}");
+      $writer->dataElement('card_color', "$card->{color}");
 
-   #Loop through each detailed element
-   foreach my $key (sort(keys %cardInfo)) {
-      $writer->dataElement($key, $cardInfo{$key}); #Write the element
+      #Loop through each detailed element
+      foreach my $key (sort(keys %cardInfo)) {
+         $writer->dataElement($key, $cardInfo{$key}); #Write the element
+      }
+
+      $writer->endTag($card->{name}); #Close card xml
+
+      #Store that we have seen this card
+      $scraped_cards{$card->{link}}='';
+      
+      print "Finished $card->{name}\n"; #Give status update
    }
-
-   $writer->endTag($card->{name}); #Close card xml
-
-   print "Finished $card->{name}\n"; #Give status update
 }
 
 $writer->endTag("cards");
