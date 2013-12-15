@@ -117,7 +117,7 @@ for my $card (@{$results->{cardRows}}) {
       #Grab detailed card info
       my %cardInfo=getCardDetail($card->{link});
       
-      $writer->startTag($card->{name}); #Open card xml
+      $writer->startTag('card'); #Open card xml
 
       #Store basic elements
       $writer->dataElement('card_link', "$card->{link}");
@@ -128,7 +128,7 @@ for my $card (@{$results->{cardRows}}) {
          $writer->dataElement($key, $cardInfo{$key}); #Write the element
       }
 
-      $writer->endTag($card->{name}); #Close card xml
+      $writer->endTag('card'); #Close card xml
 
       #Store that we have seen this card
       $scraped_cards{$card->{link}}='';
